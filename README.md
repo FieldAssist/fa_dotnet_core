@@ -2,7 +2,7 @@
 
 Official FA .NET core library containing multiple utility libraries
 
-## Installation
+## 💻 Installation
 
 1. Clone the repo or add it as submodule
 2. Add it in your project
@@ -11,7 +11,7 @@ Official FA .NET core library containing multiple utility libraries
 dotnet add FA.Cache/FA.Cache.csproj
 ```
 
-## Features
+## ⭐ Features
 
 ### Cache
 
