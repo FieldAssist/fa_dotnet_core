@@ -15,10 +15,16 @@ dotnet add FA.Cache/FA.Cache.csproj
 
 ### Cache
 
-Provides two cache providers
+Provides two popular cache:
 
 - Memory Cache
 - Redis Cache
+
+Following implementation of above cache are provided:
+
+- `MemoryCacheProvider`: Use .NET inbuilt memory cache.
+- `RedisCacheProvider`: Redis cache provider for both read write combined. Use when only 1 redis server is there.
+- `RedisReadWriteCacheProvider`: Provides separate read write connections. Use when master, replicas are different.
 
 #### ❔ Usage
 
