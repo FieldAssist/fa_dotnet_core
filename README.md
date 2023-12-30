@@ -62,7 +62,7 @@ Example implementation 1
 
 Example Implementation 2
 
-```charp
+```csharp
  private static void SetupCache(IServiceCollection serviceProvider, IConfiguration configuration)
         {
             // add for safety
