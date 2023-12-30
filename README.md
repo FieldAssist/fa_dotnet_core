@@ -37,7 +37,7 @@ Using cache in any project is now super easy
    ConfigUtils.SetupCache(serviceProvider, configuration);
 ```
 
-Example implementation
+Example implementation 1
 
 ```csharp
    public static void SetupCache(IServiceCollection serviceProvider, IConfiguration configuration)
@@ -58,6 +58,35 @@ Example implementation
         var cacheProvider = (ICacheProvider)serviceProvider.BuildServiceProvider().GetService(typeof(ICacheProvider));
         serviceProvider.AddSingleton(s => new CacheHelper(cacheProvider));
     }
+```
+
+Example Implementation 2
+
+```charp
+ private static void SetupCache(IServiceCollection serviceProvider, IConfiguration configuration)
+        {
+            // add for safety
+            serviceProvider.AddMemoryCache();
+
+            var redisReadCacheConnectionString = configuration.GetConnectionString("RedisReadCache");
+            var redisWriteCacheConnectionString = configuration.GetConnectionString("RedisWriteCache");
+            if (redisReadCacheConnectionString != null && redisWriteCacheConnectionString != null)
+            {
+                serviceProvider.AddSingleton<ICacheProvider>(s => new RedisReadWriteCacheProvider(
+                    redisReadOnlyConnectionString: redisReadCacheConnectionString,
+                    redisWriteOnlyConnectionString: redisWriteCacheConnectionString
+                    ));
+                Console.WriteLine("\u2705 Cache: Redis cache setup successful");
+            }
+            else
+            {
+                serviceProvider.AddSingleton<ICacheProvider, MemoryCacheProvider>();
+                Console.WriteLine("\u2705 Cache: Memory cache setup successful");
+            }
+
+            var cacheProvider = (ICacheProvider)serviceProvider.BuildServiceProvider().GetService(typeof(ICacheProvider));
+            serviceProvider.AddSingleton(s => new CacheHelper(cacheProvider!));
+        }
 ```
 
 2. Add CacheHelper as dependency as class constructor parameter in respective service.
