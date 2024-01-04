@@ -70,5 +70,17 @@ namespace FA.Cache.Providers
 
             return false;
         }
+
+        public void TryRemove(string cacheKey)
+        {
+            try
+            {
+                _redisWrite.KeyDelete(cacheKey);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex);
+            }
+        }
     }
 }
