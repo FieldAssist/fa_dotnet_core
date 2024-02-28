@@ -55,8 +55,7 @@ Example implementation 1
             Console.WriteLine("\u2705 Cache: Memory cache setup successful");
         }
 
-        var cacheProvider = (ICacheProvider)serviceProvider.BuildServiceProvider().GetService(typeof(ICacheProvider));
-        serviceProvider.AddSingleton(s => new CacheHelper(cacheProvider));
+        serviceProvider.AddSingleton<CacheHelper>();
     }
 ```
 
@@ -84,8 +83,7 @@ Example Implementation 2
                 Console.WriteLine("\u2705 Cache: Memory cache setup successful");
             }
 
-            var cacheProvider = (ICacheProvider)serviceProvider.BuildServiceProvider().GetService(typeof(ICacheProvider));
-            serviceProvider.AddSingleton(s => new CacheHelper(cacheProvider!));
+            serviceProvider.AddSingleton<CacheHelper>();
         }
 ```
 
