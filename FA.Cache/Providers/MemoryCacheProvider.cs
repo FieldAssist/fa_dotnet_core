@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿// Copyright (c) FieldAssist. All Rights Reserved.
+
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FA.Cache.Providers
 {

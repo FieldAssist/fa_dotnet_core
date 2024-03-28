@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿// Copyright (c) FieldAssist. All Rights Reserved.
+
+using Newtonsoft.Json;
 
 namespace FA.Cache
 {

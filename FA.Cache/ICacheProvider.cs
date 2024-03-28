@@ -1,4 +1,6 @@
-﻿namespace FA.Cache
+﻿// Copyright (c) FieldAssist. All Rights Reserved.
+
+namespace FA.Cache
 {
     public interface ICacheProvider
     {
