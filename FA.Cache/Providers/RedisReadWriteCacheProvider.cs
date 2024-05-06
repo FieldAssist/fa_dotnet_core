@@ -10,6 +10,7 @@ namespace FA.Cache.Providers
         private const string Tag = nameof(RedisReadWriteCacheProvider);
         private readonly IDatabase _readCache;
         private readonly IDatabase _redisWrite;
+        private readonly IServer _serverWtite;
 
         public RedisReadWriteCacheProvider(string redisReadOnlyConnectionString, string redisWriteOnlyConnectionString)
         {
@@ -20,6 +21,8 @@ namespace FA.Cache.Providers
             Console.WriteLine($"{Tag}: Redis read only connected successfully");
 
             var redisWrite = ConnectionMultiplexer.Connect(ConfigurationOptions.Parse(redisWriteOnlyConnectionString));
+            // Assuming only one server
+            _serverWtite = redisWrite.GetServers().FirstOrDefault();
             _redisWrite = redisWrite.GetDatabase();
             Console.WriteLine($"{Tag}: Redis write only connected successfully");
             // this.errorMessenger = errorMessenger;
@@ -83,6 +86,37 @@ namespace FA.Cache.Providers
             {
                 Console.Error.WriteLine(ex);
             }
+        }
+
+        /// <summary>
+        /// This method removes keys on the basis of pattern.<br/>
+        /// TCP call for each key
+        /// </summary>
+        /// <param name="pattern">Pattern according to which the keys are filtered and removed.</param>
+        public void TryRemoveAllKeysByPattern(string pattern)
+        {
+            if (_serverWtite is not null)
+            {
+                foreach (var key in _serverWtite.Keys(pattern: pattern))
+                {
+                    _redisWrite.KeyDelete(key);
+                }
+            }
+        }
+
+        /// <summary>
+        /// This method removes keys on the basis of pattern using LUA.<br/>
+        /// Single TCP call for all keys.
+        /// </summary>
+        /// <param name="pattern">Pattern according to which the keys are filtered and removed.</param>
+        public void TryRemoveAllKeysByPatternUsingLua(string pattern)
+        {
+            var script = @"local keys = redis.call('KEYS', ARGV[1])
+                           for _, key in ipairs(keys) do
+                               redis.call('DEL', key)
+                           end";
+
+            _redisWrite.ScriptEvaluate(script, null, new RedisValue[] { pattern }, CommandFlags.FireAndForget);
         }
     }
 }

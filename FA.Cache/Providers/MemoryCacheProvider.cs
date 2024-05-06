@@ -55,5 +55,21 @@ namespace FA.Cache.Providers
                 Console.Error.WriteLine(ex);
             }
         }
+
+        /// <summary>
+        /// NO IMPLEMENTATION FOR MEMORY CACHE.
+        /// </summary>
+        /// <param name="pattern"></param>
+        public void TryRemoveAllKeysByPattern(string pattern)
+        {
+        }
+
+        /// <summary>
+        /// NO IMPLEMENTATION FOR MEMORY CACHE.
+        /// </summary>
+        /// <param name="pattern"></param>
+        public void TryRemoveAllKeysByPatternUsingLua(string pattern)
+        {
+        }
     }
 }

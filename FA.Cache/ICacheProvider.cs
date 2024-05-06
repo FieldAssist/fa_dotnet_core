@@ -8,5 +8,7 @@ namespace FA.Cache
         void Insert<T>(string cacheKey, T result, TimeSpan expiresIn);
         bool TryGet<T>(string cacheKey, out T result);
         void TryRemove(string cacheKey);
+        void TryRemoveAllKeysByPattern(string pattern);
+        void TryRemoveAllKeysByPatternUsingLua(string pattern);
     }
 }
