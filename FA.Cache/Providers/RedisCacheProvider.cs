@@ -14,7 +14,7 @@ namespace FA.Cache.Providers
         {
             Console.WriteLine("RedisCacheProvider: Setting up redis connection...");
             var redis = ConnectionMultiplexer.Connect(ConfigurationOptions.Parse(redisConnectionString));
-            //Assuming only one server
+            // Assuming only one server
             _server = redis.GetServers().FirstOrDefault();
             _cache = redis.GetDatabase();
             Console.WriteLine("RedisCacheProvider: Redis connected successfully");
@@ -82,8 +82,8 @@ namespace FA.Cache.Providers
         }
 
         /// <summary>
-        /// This method removes keys on the basis of pattern.<br/>
-        /// TCP call for each key
+        /// Removes keys on the basis of pattern.<br/>
+        /// TCP call for each key.
         /// </summary>
         /// <param name="pattern">Pattern according to which the keys are filtered and removed.</param>
         public void TryRemoveAllKeysByPattern(string pattern)
@@ -98,7 +98,7 @@ namespace FA.Cache.Providers
         }
 
         /// <summary>
-        /// This method removes keys on the basis of pattern using LUA.<br/>
+        /// Removes keys on the basis of pattern using LUA.<br/>
         /// Single TCP call for all keys.
         /// </summary>
         /// <param name="pattern">Pattern according to which the keys are filtered and removed.</param>
