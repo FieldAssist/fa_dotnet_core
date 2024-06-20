@@ -40,5 +40,10 @@ namespace FA.Cache
 
             return result;
         }
+
+        public void RemoveCacheKey(string cacheKey)
+        {
+            _cacheProvider.TryRemove(cacheKey);
+        }
     }
 }
