@@ -31,13 +31,6 @@ namespace FA.Cache
                 // Console.WriteLine($"Cache: 📁 Result: {result}");
             }
 
-            var data = JsonConvert.SerializeObject(result);
-            if (data.Contains("Error"))
-            {
-                //Catch Redis Error and return data through DB call
-                result = await fetchDataFunc();
-            }
-
             return result;
         }
 
