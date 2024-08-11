@@ -41,9 +41,30 @@ namespace FA.Cache
             return result;
         }
 
+        [Obsolete("Use RemoveKey instead")]
         public void RemoveCacheKey(string cacheKey)
         {
             _cacheProvider.TryRemove(cacheKey);
+        }
+
+        public void RemoveKey(string cacheKey)
+        {
+            _cacheProvider.TryRemove(cacheKey);
+        }
+
+        public void RemoveKeys(string pattern)
+        {
+            _cacheProvider.TryRemoveAllKeysByPattern(pattern);
+        }
+
+        public void RemoveSmallCountOfKeys(string pattern)
+        {
+            _cacheProvider.TryRemoveAllKeysByPattern(pattern);
+        }
+
+        public void RemoveLargeCountOfKeys(string pattern)
+        {
+            _cacheProvider.TryRemoveAllKeysByPatternUsingLua(pattern);
         }
     }
 }
