@@ -61,6 +61,53 @@ namespace FA.Cache
             // }
         }
 
+        public async Task<T> GetResultAsync<T>(string cacheKey, TimeSpan expiresIn, Func<Task<T>> fetchDataFunc)
+        {
+            // First check without locking
+            var (isSuccess1, result1) = await _cacheProvider.TryGetAsync<T>(cacheKey);
+            if (isSuccess1)
+            {
+                Console.WriteLine($"Cache: 📁 Retrieved from cache. Key: {cacheKey}");
+                return result1;
+            }
+
+            var cacheLock = s_locks.GetOrAdd(cacheKey, new SemaphoreSlim(1, 1));
+            await cacheLock.WaitAsync();
+            try
+            {
+                // check the cache inside the lock
+                var (isSuccess, result) = await _cacheProvider.TryGetAsync<T>(cacheKey);
+                if (!isSuccess)
+                {
+                    result = await fetchDataFunc();
+                    if (result != null && !result.Equals(default(T)))
+                    {
+                        _cacheProvider.Insert(cacheKey, result, expiresIn);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Cache: 📁 Retrieved from cache -------");
+                    Console.WriteLine($"Cache: 📁 Key: {cacheKey}");
+                }
+
+                return result;
+            }
+            finally
+            {
+                cacheLock.Release();
+                s_locks.TryRemove(cacheKey, out _); // Optionally remove the lock after it's done
+            }
+
+
+            // var data = JsonConvert.SerializeObject(result);
+            // if (data.Contains("Error"))
+            // {
+            //     // Catch Redis Error and return data through DB call
+            //     result = await fetchDataFunc();
+            // }
+        }
+
 
         [Obsolete("Use RemoveKey instead")]
         public void RemoveCacheKey(string cacheKey)

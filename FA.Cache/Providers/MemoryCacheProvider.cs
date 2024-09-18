@@ -44,6 +44,25 @@ namespace FA.Cache.Providers
             return false;
         }
 
+        public async Task<(bool isSuccess, T result)> TryGetAsync<T>(string cacheKey)
+        {
+            var result = default(T);
+
+            // Simulate asynchronous execution with Task.FromResult
+            var cacheResult = await Task.FromResult(cache.TryGetValue(cacheKey, out var v));
+
+            if (cacheResult)
+            {
+                if (v is T t)
+                {
+                    result = t;
+                    return (true, result);
+                }
+            }
+
+            return (false, default(T)); // Return false and default if not found or type mismatch
+        }
+
         public void TryRemove(string cacheKey)
         {
             try

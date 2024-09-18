@@ -1,5 +1,6 @@
 ﻿// Copyright (c) FieldAssist. All Rights Reserved.
 
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using StackExchange.Redis;
 
@@ -7,19 +8,19 @@ namespace FA.Cache.Providers
 {
     public class RedisCacheProvider : ICacheProvider
     {
+        private readonly ILogger<RedisCacheProvider> _logger;
         private readonly IDatabase _cache;
         private readonly IServer _server;
 
-        public RedisCacheProvider(string redisConnectionString)
+        public RedisCacheProvider(ILogger<RedisCacheProvider> logger, string redisConnectionString)
         {
-            Console.WriteLine("RedisCacheProvider: Setting up redis connection...");
+            _logger = logger;
+            _logger.LogInformation("RedisCacheProvider: Setting up redis connection...");
             var redis = ConnectionMultiplexer.Connect(ConfigurationOptions.Parse(redisConnectionString));
             // Assuming only one server
             _server = redis.GetServers().FirstOrDefault();
             _cache = redis.GetDatabase();
-            Console.WriteLine("RedisCacheProvider: Redis connected successfully");
-            // this.errorMessenger = errorMessenger;
-            // this.myLogger = myLogger;
+            _logger.LogInformation("RedisCacheProvider: Redis connected successfully");
         }
 
         public void Initialize()
@@ -42,8 +43,7 @@ namespace FA.Cache.Providers
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine(ex);
-                // Task.Run(async () => { await myLogger.SaveLog(ex, $"Cache Key: {cacheKey}", ex.StackTrace ?? ""); });
+                _logger.LogError(ex, ex.Message);
             }
         }
 
@@ -61,11 +61,31 @@ namespace FA.Cache.Providers
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Error fetching cache key {cacheKey}: {ex.Message}");
+                _logger.LogError($"Error fetching cache key {cacheKey}: {ex.Message}");
                 result = default(T); // Reset result to default in case of error
             }
 
             return false;
+        }
+
+        public async Task<(bool isSuccess, T result)> TryGetAsync<T>(string cacheKey)
+        {
+            var result = default(T);
+            try
+            {
+                var value = await _cache.StringGetAsync(cacheKey); // Asynchronous call to Redis
+                if (!value.IsNull)
+                {
+                    result = JsonConvert.DeserializeObject<T>(value); // Deserialize value if found
+                    return (true, result);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error fetching cache key {cacheKey}: {ex.Message}");
+            }
+
+            return (false, default(T)); // Return false and default result in case of failure
         }
 
         public void TryRemove(string cacheKey)
@@ -76,7 +96,7 @@ namespace FA.Cache.Providers
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine(ex);
+                _logger.LogError(ex, ex.Message);
             }
         }
 
