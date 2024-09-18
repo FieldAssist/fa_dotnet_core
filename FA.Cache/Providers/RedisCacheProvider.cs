@@ -49,7 +49,6 @@ namespace FA.Cache.Providers
 
         public bool TryGet<T>(string cacheKey, out T result)
         {
-            ThreadPool.SetMinThreads(200, 2);
             result = default(T);
             try
             {
@@ -62,8 +61,8 @@ namespace FA.Cache.Providers
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine(ex);
-                return true;
+                Console.Error.WriteLine($"Error fetching cache key {cacheKey}: {ex.Message}");
+                result = default(T); // Reset result to default in case of error
             }
 
             return false;
