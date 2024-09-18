@@ -18,34 +18,40 @@ namespace FA.Cache
 
         public async Task<T> GetResult<T>(string cacheKey, TimeSpan expiresIn, Func<Task<T>> fetchDataFunc)
         {
-            if (!_cacheProvider.TryGet(cacheKey, out T result))
+            // First check without locking
+            if (_cacheProvider.TryGet(cacheKey, out T result1))
             {
-                var cacheLock = s_locks.GetOrAdd(cacheKey, new SemaphoreSlim(1, 1));
+                Console.WriteLine($"Cache: 📁 Retrieved from cache. Key: {cacheKey}");
+                return result1;
+            }
 
-                await cacheLock.WaitAsync();
-                try
+            var cacheLock = s_locks.GetOrAdd(cacheKey, new SemaphoreSlim(1, 1));
+            await cacheLock.WaitAsync();
+            try
+            {
+                // check the cache inside the lock
+                if (!_cacheProvider.TryGet(cacheKey, out T result))
                 {
-                    // Double-check the cache inside the lock
-                    if (!_cacheProvider.TryGet(cacheKey, out result))
+                    result = await fetchDataFunc();
+                    if (result != null && !result.Equals(default(T)))
                     {
-                        result = await fetchDataFunc();
-                        if (result != null && !result.Equals(default(T)))
-                        {
-                            _cacheProvider.Insert(cacheKey, result, expiresIn);
-                        }
+                        _cacheProvider.Insert(cacheKey, result, expiresIn);
                     }
                 }
-                finally
+                else
                 {
-                    cacheLock.Release();
-                    s_locks.TryRemove(cacheKey, out _); // Optionally remove the lock after it's done
+                    Console.WriteLine($"Cache: 📁 Retrieved from cache -------");
+                    Console.WriteLine($"Cache: 📁 Key: {cacheKey}");
                 }
+
+                return result;
             }
-            else
+            finally
             {
-                Console.WriteLine($"Cache: 📁 Retrieved from cache -------");
-                Console.WriteLine($"Cache: 📁 Key: {cacheKey}");
+                cacheLock.Release();
+                s_locks.TryRemove(cacheKey, out _); // Optionally remove the lock after it's done
             }
+
 
             // var data = JsonConvert.SerializeObject(result);
             // if (data.Contains("Error"))
@@ -53,8 +59,6 @@ namespace FA.Cache
             //     // Catch Redis Error and return data through DB call
             //     result = await fetchDataFunc();
             // }
-
-            return result;
         }
 
 
