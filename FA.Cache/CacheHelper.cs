@@ -1,111 +1,61 @@
 ﻿// Copyright (c) FieldAssist. All Rights Reserved.
 
 using System.Collections.Concurrent;
-using Newtonsoft.Json;
+using Microsoft.Extensions.Logging;
 
 namespace FA.Cache
 {
     public class CacheHelper
     {
         private readonly ICacheProvider _cacheProvider;
+        private readonly ILogger<CacheHelper> _logger;
 
         private static readonly ConcurrentDictionary<string, SemaphoreSlim> s_locks = new();
 
-        public CacheHelper(ICacheProvider cacheProvider)
+        public CacheHelper(ILogger<CacheHelper> logger, ICacheProvider cacheProvider)
         {
             _cacheProvider = cacheProvider;
+            _logger = logger;
         }
 
         public async Task<T> GetResult<T>(string cacheKey, TimeSpan expiresIn, Func<Task<T>> fetchDataFunc)
         {
-            // First check without locking
-            if (_cacheProvider.TryGet(cacheKey, out T result1))
+            // Try to get the result from the cache
+            if (_cacheProvider.TryGet(cacheKey, out T cachedResult))
             {
-                Console.WriteLine($"Cache: 📁 Retrieved from cache. Key: {cacheKey}");
-                return result1;
+                _logger.LogInformation($"Cache: 📁 Retrieved from cache. Key: {cacheKey}");
+                return cachedResult;
             }
 
-            var cacheLock = s_locks.GetOrAdd(cacheKey, new SemaphoreSlim(1, 1));
-            await cacheLock.WaitAsync();
-            try
-            {
-                // check the cache inside the lock
-                if (!_cacheProvider.TryGet(cacheKey, out T result))
-                {
-                    result = await fetchDataFunc();
-                    if (result != null && !result.Equals(default(T)))
-                    {
-                        _cacheProvider.Insert(cacheKey, result, expiresIn);
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"Cache: 📁 Retrieved from cache -------");
-                    Console.WriteLine($"Cache: 📁 Key: {cacheKey}");
-                }
+            // Fetch the data from the external source (DB, etc.) using the provided callback
+            var result = await fetchDataFunc();
 
-                return result;
-            }
-            finally
+            // If the result is valid, cache it and return
+            if (result != null && !result.Equals(default(T)))
             {
-                cacheLock.Release();
-                s_locks.TryRemove(cacheKey, out _); // Optionally remove the lock after it's done
+                _cacheProvider.Insert(cacheKey, result, expiresIn);
             }
 
-
-            // var data = JsonConvert.SerializeObject(result);
-            // if (data.Contains("Error"))
-            // {
-            //     // Catch Redis Error and return data through DB call
-            //     result = await fetchDataFunc();
-            // }
+            return result;
         }
 
         public async Task<T> GetResultAsync<T>(string cacheKey, TimeSpan expiresIn, Func<Task<T>> fetchDataFunc)
         {
             // First check without locking
-            var (isSuccess1, result1) = await _cacheProvider.TryGetAsync<T>(cacheKey);
+            var (isSuccess1, cachedResult) = await _cacheProvider.TryGetAsync<T>(cacheKey);
             if (isSuccess1)
             {
-                Console.WriteLine($"Cache: 📁 Retrieved from cache. Key: {cacheKey}");
-                return result1;
+                _logger.LogInformation($"Cache: 📁 Retrieved from cache. Key: {cacheKey}");
+                return cachedResult;
             }
 
-            var cacheLock = s_locks.GetOrAdd(cacheKey, new SemaphoreSlim(1, 1));
-            await cacheLock.WaitAsync();
-            try
+            var result = await fetchDataFunc();
+            if (result != null && !result.Equals(default(T)))
             {
-                // check the cache inside the lock
-                var (isSuccess, result) = await _cacheProvider.TryGetAsync<T>(cacheKey);
-                if (!isSuccess)
-                {
-                    result = await fetchDataFunc();
-                    if (result != null && !result.Equals(default(T)))
-                    {
-                        _cacheProvider.Insert(cacheKey, result, expiresIn);
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"Cache: 📁 Retrieved from cache -------");
-                    Console.WriteLine($"Cache: 📁 Key: {cacheKey}");
-                }
-
-                return result;
-            }
-            finally
-            {
-                cacheLock.Release();
-                s_locks.TryRemove(cacheKey, out _); // Optionally remove the lock after it's done
+                _cacheProvider.Insert(cacheKey, result, expiresIn);
             }
 
-
-            // var data = JsonConvert.SerializeObject(result);
-            // if (data.Contains("Error"))
-            // {
-            //     // Catch Redis Error and return data through DB call
-            //     result = await fetchDataFunc();
-            // }
+            return result;
         }
 
 
