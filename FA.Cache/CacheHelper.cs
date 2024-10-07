@@ -10,8 +10,6 @@ namespace FA.Cache
         private readonly ICacheProvider _cacheProvider;
         private readonly ILogger<CacheHelper> _logger;
 
-        private static readonly ConcurrentDictionary<string, SemaphoreSlim> s_locks = new();
-
         public CacheHelper(ILogger<CacheHelper> logger, ICacheProvider cacheProvider)
         {
             _cacheProvider = cacheProvider;
@@ -27,10 +25,7 @@ namespace FA.Cache
                 return cachedResult;
             }
 
-            // Fetch the data from the external source (DB, etc.) using the provided callback
             var result = await fetchDataFunc();
-
-            // If the result is valid, cache it and return
             if (result != null && !result.Equals(default(T)))
             {
                 _cacheProvider.Insert(cacheKey, result, expiresIn);
