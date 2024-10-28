@@ -107,7 +107,7 @@ Example Usage:
 ```csharp
         var positionsList = await _cacheHelper.GetResult(
             CacheKeys.GetPositionDetails(companyId), TimeSpan.FromHours(1),
-            () => _unifyDbRepository.GetCompanyPositionUserDetails(companyId));
+            async () => await _unifyDbRepository.GetCompanyPositionUserDetails(companyId));
 ```
 
 ## Author
