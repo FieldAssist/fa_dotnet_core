@@ -13,7 +13,9 @@ public class LokiService : IDisposable
     private readonly string Prefix = "🐛 LokiService";
     private bool _isProcessing;
 
+#pragma warning disable IDISP002 // Dispose member - Log Service and LokiService are used as singleton, so it is fine.
     private readonly HttpClient _httpClient;
+#pragma warning restore IDISP002 // Dispose member
     private readonly string _lokiEndpoint;
     private readonly ConcurrentQueue<dynamic> _logQueue;
     private readonly int _batchSize;
@@ -146,7 +148,7 @@ public class LokiService : IDisposable
 
             Console.WriteLine($"{Prefix}: Sending {logsToSend.Count} logs...");
             var bodyString = JsonSerializer.Serialize(logStream);
-            var jsonContent =
+            using var jsonContent =
                 new StringContent(bodyString, Encoding.UTF8, "application/json");
             await Policy
                 .Handle<HttpRequestException>()
@@ -158,7 +160,7 @@ public class LokiService : IDisposable
                 {
                     try
                     {
-                        var response = await _httpClient.PostAsync($"{_lokiEndpoint}/loki/api/v1/push", jsonContent);
+                        using var response = await _httpClient.PostAsync($"{_lokiEndpoint}/loki/api/v1/push", jsonContent);
                         if (!response.IsSuccessStatusCode)
                         {
                             var text = await response.Content.ReadAsStringAsync();
