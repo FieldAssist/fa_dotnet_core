@@ -52,7 +52,6 @@ namespace FA.Cache
             return result;
         }
 
-
         [Obsolete("Use RemoveKey instead")]
         public void RemoveCacheKey(string cacheKey)
         {
