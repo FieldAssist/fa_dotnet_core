@@ -77,5 +77,37 @@ namespace FA.Cache
         {
             _cacheProvider.TryRemoveAllKeysByPatternUsingLua(pattern);
         }
+
+        public async Task<(bool IsAllowed, int CurrentCount)> IncrementWithLimitAsync(string cacheKey, int maxAllowed, TimeSpan expiresIn)
+        {
+            try
+            {
+                var (found, currentValue) = await _cacheProvider.TryGetAsync<int>(cacheKey);
+                int newValue;
+                if (!found)
+                {
+                    newValue = 1;
+                }
+                else
+                {
+                    newValue = currentValue + 1;
+                }
+
+                if (newValue > maxAllowed)
+                {
+                    _logger.LogWarning($"Cache: :no_entry_sign: Rate limit hit for key {cacheKey}. Count={newValue}");
+                    return (false, currentValue);
+                }
+
+                _cacheProvider.Insert(cacheKey, newValue, expiresIn);
+                _logger.LogInformation($"Cache: :1234: Incremented key {cacheKey} → {newValue}");
+                return (true, newValue);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Cache rate limit failed for key {cacheKey}");
+                return (true, 0);
+            }
+        }
     }
 }
