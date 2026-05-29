@@ -1,7 +1,6 @@
 ﻿// Copyright (c) FieldAssist. All Rights Reserved.
 
 using System.Collections.Concurrent;
-using Newtonsoft.Json;
 
 namespace FA.Cache
 {
@@ -52,7 +51,6 @@ namespace FA.Cache
                 s_locks.TryRemove(cacheKey, out _); // Optionally remove the lock after it's done
             }
 
-
             // var data = JsonConvert.SerializeObject(result);
             // if (data.Contains("Error"))
             // {
@@ -99,7 +97,6 @@ namespace FA.Cache
                 s_locks.TryRemove(cacheKey, out _); // Optionally remove the lock after it's done
             }
 
-
             // var data = JsonConvert.SerializeObject(result);
             // if (data.Contains("Error"))
             // {
@@ -107,7 +104,6 @@ namespace FA.Cache
             //     result = await fetchDataFunc();
             // }
         }
-
 
         [Obsolete("Use RemoveKey instead")]
         public void RemoveCacheKey(string cacheKey)
