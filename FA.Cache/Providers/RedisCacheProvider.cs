@@ -12,6 +12,12 @@ namespace FA.Cache.Providers
         private readonly IDatabase _cache;
         private readonly IServer _server;
 
+        /// <summary>
+        /// Exposes the underlying Redis database connection.
+        /// Useful for sharing the connection with <see cref="FA.Cache.Providers.RedisDistributedLockProvider"/>.
+        /// </summary>
+        public IDatabase Database => _cache;
+
         public RedisCacheProvider(ILogger<RedisCacheProvider> logger, string redisConnectionString)
         {
             _logger = logger;

@@ -110,6 +110,127 @@ Example Usage:
             async () => await _unifyDbRepository.GetCompanyPositionUserDetails(companyId));
 ```
 
+### Distributed Locks
+
+Provides distributed locking to prevent race conditions across multiple service instances (e.g., in Kubernetes).
+
+Compatible with **Redis** and **Dragonfly DB**.
+
+Following implementations are provided:
+
+- `RedisDistributedLockProvider`: Uses Redis/Dragonfly `SET NX PX` and Lua scripts for atomic lock operations.
+- `MemoryDistributedLockProvider`: Thread-safe in-memory fallback for local development.
+
+#### ❔ Setup
+
+1. Update Dependencies.cs
+
+Example with Redis:
+
+```csharp
+   public static void SetupDistributedLock(IServiceCollection serviceProvider, IConfiguration configuration)
+   {
+       var redisCacheConnectionString = configuration.GetConnectionString("RedisCache");
+       if (redisCacheConnectionString != null)
+       {
+           // Option 1: Reuse the IDatabase from an existing RedisCacheProvider
+           var cacheProvider = serviceProvider.BuildServiceProvider()
+               .GetRequiredService<ICacheProvider>() as RedisCacheProvider;
+           serviceProvider.AddSingleton<IDistributedLockProvider>(s =>
+               new RedisDistributedLockProvider(
+                   s.GetRequiredService<ILogger<RedisDistributedLockProvider>>(),
+                   cacheProvider!.Database));
+       }
+       else
+       {
+           serviceProvider.AddSingleton<IDistributedLockProvider, MemoryDistributedLockProvider>();
+       }
+   }
+```
+
+Example with Read/Write Redis:
+
+```csharp
+   public static void SetupDistributedLock(IServiceCollection serviceProvider, IConfiguration configuration)
+   {
+       var redisWriteConnectionString = configuration.GetConnectionString("RedisWriteCache");
+       if (redisWriteConnectionString != null)
+       {
+           var cacheProvider = serviceProvider.BuildServiceProvider()
+               .GetRequiredService<ICacheProvider>() as RedisReadWriteCacheProvider;
+           serviceProvider.AddSingleton<IDistributedLockProvider>(s =>
+               new RedisDistributedLockProvider(
+                   s.GetRequiredService<ILogger<RedisDistributedLockProvider>>(),
+                   cacheProvider!.Database));
+       }
+       else
+       {
+           serviceProvider.AddSingleton<IDistributedLockProvider, MemoryDistributedLockProvider>();
+       }
+   }
+```
+
+2. Add `IDistributedLockProvider` as a dependency in your service constructor.
+
+#### ❔ Usage
+
+**Simple usage with `await using` (recommended):**
+
+```csharp
+   await using var lockHandle = await _lockProvider.TryAcquireAsync(
+       lockKey: $"lock:order:{orderId}",
+       expiresIn: TimeSpan.FromSeconds(30));
+
+   if (lockHandle is null)
+   {
+       // Could not acquire the lock
+       throw new InvalidOperationException("Resource is busy.");
+   }
+
+   // Critical section — only one instance runs this at a time
+   await ProcessOrderAsync(orderId);
+   // Lock is automatically released when lockHandle is disposed
+```
+
+**With wait and retry:**
+
+```csharp
+   await using var lockHandle = await _lockProvider.TryAcquireAsync(
+       lockKey: $"lock:report:{reportId}",
+       expiresIn: TimeSpan.FromMinutes(2),
+       waitTime: TimeSpan.FromSeconds(10),   // Wait up to 10s for the lock
+       retryInterval: TimeSpan.FromMilliseconds(200));  // Retry every 200ms
+
+   if (lockHandle is null)
+   {
+       _logger.LogWarning("Timeout waiting for lock on report {ReportId}", reportId);
+       return;
+   }
+
+   await GenerateReportAsync(reportId);
+```
+
+**Low-level acquire/release:**
+
+```csharp
+   var lockValue = Guid.NewGuid().ToString();
+   var acquired = await _lockProvider.AcquireAsync(
+       "lock:my-resource", lockValue, TimeSpan.FromSeconds(30));
+
+   if (acquired)
+   {
+       try
+       {
+           // Critical section
+       }
+       finally
+       {
+           await _lockProvider.ReleaseAsync("lock:my-resource", lockValue);
+       }
+   }
+```
+
 ## Author
 
 Made with ❤️ by [Ayush P Gupta (@apgapg)](https://github.com/apgapg)
+

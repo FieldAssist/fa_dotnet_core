@@ -1,4 +1,4 @@
-// Copyright (c) FieldAssist. All Rights Reserved.
+﻿// Copyright (c) FieldAssist. All Rights Reserved.
 
 using System.Text.Json;
 

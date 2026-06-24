@@ -13,6 +13,12 @@ namespace FA.Cache.Providers
         private readonly IDatabase _redisWrite;
         private readonly IServer _serverWtite;
 
+        /// <summary>
+        /// Exposes the underlying Redis write database connection.
+        /// Useful for sharing the connection with <see cref="FA.Cache.Providers.RedisDistributedLockProvider"/>.
+        /// </summary>
+        public IDatabase Database => _redisWrite;
+
         public RedisReadWriteCacheProvider(ILogger<RedisReadWriteCacheProvider> logger,
             string redisReadOnlyConnectionString, string redisWriteOnlyConnectionString)
         {
